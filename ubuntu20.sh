@@ -13,16 +13,16 @@
 # based on https://xalitech.com/wireguard-vpn-server-on-aws-lightsail/
 
 # usual thing: 
-apt update -y 
-apt upgrade -y
+sudo apt update -y 
+sudo apt upgrade -y
 
 # useful to get IP information
 echo "*** utils installation"
-apt install moreutils -y
+sudo apt install moreutils -y
 
 echo "*** WG installation"
-apt install wireguard -y
-apt install qrencode -y
+sudo apt install wireguard -y
+sudo apt install qrencode -y
 
 echo "*** generate public & private keys for server and clients"
 umask 077 && 
@@ -61,36 +61,36 @@ AllowedIPs = 10.200.200.13/32
 
 
 echo "*** bring the Wireguard interface up and makes sure it is auto start on reboot"
-wg-quick up wg0 &&  
-systemctl enable wg-quick@wg0.service
+sudo wg-quick up wg0 &&  
+sudo systemctl enable wg-quick@wg0.service
 
 echo "*** enable IPv4 forwarding"
-sed -i 's/\#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
+sudo sed -i 's/\#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
 
 echo "*** negate the need to reboot after the above change"
-sysctl -p
-echo 1 | tee /proc/sys/net/ipv4/ip_forward
+sudo sysctl -p
+sudo echo 1 | tee /proc/sys/net/ipv4/ip_forward
 
 echo "### FIREWALL"
 
 # Track VPN connection
-iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
 # Enable VPN traffic on the listening port: 51820
-iptables -A INPUT -p udp -m udp --dport 51820 -m conntrack --ctstate NEW -j ACCEPT
+sudo iptables -A INPUT -p udp -m udp --dport 51820 -m conntrack --ctstate NEW -j ACCEPT
 
 # TCP & UDP recursive DNS traffic
-iptables -A INPUT -s 10.200.200.0/24 -p tcp -m tcp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
-iptables -A INPUT -s 10.200.200.0/24 -p udp -m udp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
+sudo iptables -A INPUT -s 10.200.200.0/24 -p tcp -m tcp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
+sudo iptables -A INPUT -s 10.200.200.0/24 -p udp -m udp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
 
 # Allow forwarding of packets that stay in the VPN tunnel
-iptables -A FORWARD -i wg0 -o wg0 -m conntrack --ctstate NEW -j ACCEPT
+sudo iptables -A FORWARD -i wg0 -o wg0 -m conntrack --ctstate NEW -j ACCEPT
 
 echo "make firewall changes persistent"
-apt install iptables-persistent -y &&
-systemctl enable netfilter-persistent &&
-netfilter-persistent save
+sudo apt install iptables-persistent -y &&
+sudo systemctl enable netfilter-persistent &&
+sudo netfilter-persistent save
 
 
 echo "### CLIENTS"
@@ -123,7 +123,7 @@ qrencode -o wg/clients/${clientFileName}.png -t png < wg/clients/${clientFileNam
 # scp your_server_login@54.166.184.7:wg/clients/* wg/
 #
 # install net-tools!
-# apt install net-tools -y && wget https://github.com/marlon-net/wg-install/blob/master/ubuntu20.sh -O installwg.sh && bash installwg.sh
+# sudo apt install net-tools -y && sudo wget -L https://github.com/marlon-net/wg-install/raw/master/ubuntu20.sh -O installwg.sh && bash installwg.sh
 
 
 ### END
