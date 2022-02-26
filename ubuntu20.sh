@@ -57,21 +57,20 @@ ListenPort = 51820
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -A POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
 PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ens3 -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -D POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
 SaveConfig = true 
-"| tee /etc/wireguard/wg0.conf
+"| sudo tee /etc/wireguard/wg0.conf
 
 #Clients
 echo creating [Peer] section
-countFiles=0
+export countFiles=0
 for FILE in wg/keys/*
 do
-    ((count++))
+    ((countFiles++))
     echo creating client $countFiles
     echo " 
     [Peer] # client${countFiles}
-    PublicKey = $(cat wg/keys/${FILE})
+    PublicKey = $(cat ${FILE})
     AllowedIPs = 10.200.200.1${countFiles}/32
-    "| tee -a /etc/wireguard/wg0.conf
-    echo client $countFiles
+    "| sudo tee -a /etc/wireguard/wg0.conf
 done
 
 echo $countFiles files found
