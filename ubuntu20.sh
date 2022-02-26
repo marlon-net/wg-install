@@ -31,13 +31,13 @@ sudo apt install wireguard -y
 sudo apt install qrencode -y
 
 echo "*** generate public & private keys for server and clients"
-umask 077 && 
-mkdir wg && 
-mkdir wg/keys &&
-mkdir wg/clients &&
-wg genkey | tee wg/keys/server_private_key  | wg pubkey > wg/keys/server_public_key  &&
-wg genkey | tee wg/keys/client1_private_key | wg pubkey > wg/keys/client1_public_key && 
-wg genkey | tee wg/keys/client2_private_key | wg pubkey > wg/keys/client2_public_key && 
+#
+umask 077
+mkdir wg && mkdir wg/keys && mkdir wg/clients
+#
+wg genkey | tee wg/keys/server_private_key  | wg pubkey > wg/keys/server_public_key
+wg genkey | tee wg/keys/client1_private_key | wg pubkey > wg/keys/client1_public_key 
+wg genkey | tee wg/keys/client2_private_key | wg pubkey > wg/keys/client2_public_key 
 wg genkey | tee wg/keys/client3_private_key | wg pubkey > wg/keys/client3_public_key
 
 # getting server public key file name and set variable
