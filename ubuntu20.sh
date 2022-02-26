@@ -43,9 +43,8 @@ do
 done
 
 # getting server keys and set variables
-export serverPublicKey=cat wg/keys/${serverIP}_server_public_key
-export serverPrivateKey=cat wg/keys/${serverIP}_server_private_key
-#echo Server Public Key = ${serverPublicKey}
+export serverPublicKey=$(cat wg/keys/${serverIP}_server_public_key)
+export serverPrivateKey=$(cat wg/keys/${serverIP}_server_private_key)
 
 echo "*** generate WireGuard Server configuration (wg0.config)"
 echo creating [Interface] section
@@ -118,7 +117,7 @@ do
 
     export clientName=client${countFiles}
     export clientAddress="10.200.200.1${countFiles}/32"
-    export clientPrivateKey=cat wg/keys/${serverIP}_${clientName}_private_key
+    export clientPrivateKey=$(cat wg/keys/${serverIP}_${clientName}_private_key)
 
     echo "[Interface] 
 Address = ${clientAddress}
