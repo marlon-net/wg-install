@@ -49,6 +49,7 @@ export serverPrivateKey=cat wg/keys/${serverIP}_server_private_key
 #echo Server Public Key = ${serverPublicKey}
 
 echo "*** generate WireGuard Server configuration (wg0.config)"
+echo creating [Interface] section
 echo " 
 [Interface]
 PrivateKey = ${serverPrivateKey}
@@ -57,28 +58,29 @@ ListenPort = 51820
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -A POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
 PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ens3 -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -D POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
 SaveConfig = true 
+"| tee /etc/wireguard/wg0.conf > /dev/null
 
 #Clients
-[Peer] # client1
-PublicKey = $(cat wg/keys/${serverIP}_client1_public_key)
-AllowedIPs = 10.200.200.11/32
+echo creating [Peer] section
+count=0
+for FILE in wg/keys/*
+do
+    count++
+    echo creating client $count
+    echo " 
+    [Peer] # client${count}
+    PublicKey = $(cat wg/keys/${FILE})
+    AllowedIPs = 10.200.200.1${count}/32
+    "| tee -a /etc/wireguard/wg0.conf > /dev/null
+    echo client $count
+done
 
-[Peer] # client2
-PublicKey = $(cat wg/keys/${serverIP}_client2_public_key)
-AllowedIPs = 10.200.200.12/32
+echo $count files found
 
-[Peer] # client3
-PublicKey = $(cat wg/keys/${serverIP}_client3_public_key)
-AllowedIPs = 10.200.200.13/32
 
-[Peer] # client4
-PublicKey = $(cat wg/keys/${serverIP}_client4_public_key)
-AllowedIPs = 10.200.200.14/32
-
-[Peer] # client5
-PublicKey = $(cat wg/keys/${serverIP}_client5_public_key)
-AllowedIPs = 10.200.200.15/32
-"| tee /etc/wireguard/wg0.conf
+#[Peer] # client2
+#PublicKey = $(cat wg/keys/${serverIP}_client2_public_key)
+#AllowedIPs = 10.200.200.12/32
 
 
 echo "*** bring the Wireguard interface up and makes sure it is auto start on reboot"
