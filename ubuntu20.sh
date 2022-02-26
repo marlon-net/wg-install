@@ -37,11 +37,10 @@ mkdir wg && mkdir wg/keys && mkdir wg/clients
 #
 wg genkey | tee wg/keys/${serverIP}_server_private_key  | wg pubkey > wg/keys/${serverIP}_server_public_key
 #
-wg genkey | tee wg/keys/${serverIP}_client1_private_key | wg pubkey > wg/keys/${serverIP}_client1_public_key 
-wg genkey | tee wg/keys/${serverIP}_client2_private_key | wg pubkey > wg/keys/${serverIP}_client2_public_key 
-wg genkey | tee wg/keys/${serverIP}_client3_private_key | wg pubkey > wg/keys/${serverIP}_client3_public_key
-wg genkey | tee wg/keys/${serverIP}_client4_private_key | wg pubkey > wg/keys/${serverIP}_client4_public_key
-wg genkey | tee wg/keys/${serverIP}_client5_private_key | wg pubkey > wg/keys/${serverIP}_client5_public_key
+for COUNTCLIENTS in 1 2 3 4 5
+do
+    wg genkey | tee wg/keys/${serverIP}_client${COUNTCLIENTS}_private_key | wg pubkey > wg/keys/${serverIP}_client${COUNTCLIENTS}_public_key 
+done
 
 # getting server keys and set variables
 export serverPublicKey=cat wg/keys/${serverIP}_server_public_key
@@ -58,24 +57,24 @@ ListenPort = 51820
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -A POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
 PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ens3 -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -D POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
 SaveConfig = true 
-"| tee /etc/wireguard/wg0.conf > /dev/null
+"| tee /etc/wireguard/wg0.conf
 
 #Clients
 echo creating [Peer] section
-count=0
+countFiles=0
 for FILE in wg/keys/*
 do
-    count++
-    echo creating client $count
+    ((count++))
+    echo creating client $countFiles
     echo " 
-    [Peer] # client${count}
+    [Peer] # client${countFiles}
     PublicKey = $(cat wg/keys/${FILE})
-    AllowedIPs = 10.200.200.1${count}/32
-    "| tee -a /etc/wireguard/wg0.conf > /dev/null
-    echo client $count
+    AllowedIPs = 10.200.200.1${countFiles}/32
+    "| tee -a /etc/wireguard/wg0.conf
+    echo client $countFiles
 done
 
-echo $count files found
+echo $countFiles files found
 
 
 #[Peer] # client2
