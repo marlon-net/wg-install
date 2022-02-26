@@ -20,6 +20,11 @@ sudo apt upgrade -y
 echo "*** utils installation"
 sudo apt install moreutils -y
 
+# Public IP of Lightsail instance
+curl ifconfig.me > myipv4.txt
+export serverIP=$(cat 'myipv4.txt')
+echo Server IP = ${serverIP}
+
 echo "*** WG installation"
 sudo apt install wireguard -y
 sudo apt install qrencode -y
@@ -29,10 +34,10 @@ umask 077 &&
 mkdir wg && 
 mkdir wg/keys &&
 mkdir wg/clients &&
-wg genkey | tee wg/keys/server_private_key | wg pubkey > wg/keys/server_public_key
-wg genkey | tee wg/keys/client1_private_key | wg pubkey > wg/keys/client1_public_key && 
-wg genkey | tee wg/keys/client2_private_key | wg pubkey > wg/keys/client2_public_key && 
-wg genkey | tee wg/keys/client3_private_key | wg pubkey > wg/keys/client3_public_key && 
+wg genkey | tee wg/keys/${serverIP}_server_private_key | wg pubkey > wg/keys/${serverIP}_server_public_key
+wg genkey | tee wg/keys/${serverIP}_client1_private_key | wg pubkey > wg/keys/${serverIP}_client1_public_key && 
+wg genkey | tee wg/keys/${serverIP}_client2_private_key | wg pubkey > wg/keys/${serverIP}_client2_public_key && 
+wg genkey | tee wg/keys/${serverIP}_client3_private_key | wg pubkey > wg/keys/${serverIP}_client3_public_key && 
 
 
 echo "*** generate WireGuard Server configuration (wg0.config)"
@@ -94,12 +99,6 @@ sudo netfilter-persistent save
 
 
 echo "### CLIENTS"
-
-# Public IP of Lightsail instance
-#export serverIP="54.166.184.7"
-curl ifconfig.me > myipv4.txt
-export serverIP=$(cat 'myipv4.txt')
-echo Server IP = ${serverIP}
 
 echo "*** client1"
 export clientName="client1"
