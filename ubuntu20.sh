@@ -25,6 +25,7 @@ curl ifconfig.me > myipv4.txt
 export serverIP=$(cat 'myipv4.txt')
 echo Server IP = ${serverIP}
 
+#-----------------------------------------------------------------------
 echo "*** WG installation"
 sudo apt install wireguard -y
 sudo apt install qrencode -y
@@ -34,11 +35,18 @@ umask 077 &&
 mkdir wg && 
 mkdir wg/keys &&
 mkdir wg/clients &&
-wg genkey | tee wg/keys/${serverIP}_server_private_key | wg pubkey > wg/keys/${serverIP}_server_public_key
-wg genkey | tee wg/keys/${serverIP}_client1_private_key | wg pubkey > wg/keys/${serverIP}_client1_public_key && 
-wg genkey | tee wg/keys/${serverIP}_client2_private_key | wg pubkey > wg/keys/${serverIP}_client2_public_key && 
-wg genkey | tee wg/keys/${serverIP}_client3_private_key | wg pubkey > wg/keys/${serverIP}_client3_public_key && 
+wg genkey | tee wg/keys/server_private_key  | wg pubkey > wg/keys/server_public_key  &&
+wg genkey | tee wg/keys/client1_private_key | wg pubkey > wg/keys/client1_public_key && 
+wg genkey | tee wg/keys/client2_private_key | wg pubkey > wg/keys/client2_public_key && 
+wg genkey | tee wg/keys/client3_private_key | wg pubkey > wg/keys/client3_public_key
 
+# getting server public key file name and set variable
+#echo 'wg/keys/' > serverpublickey.txt
+#echo ${serverIP} >> serverpublickey.txt
+#echo '_server_public_key' >> serverpublickey.txt
+
+export serverPublicKey=$(cat 'wg/keys/server_public_key')
+echo Server Public Key = ${serverPublicKey}
 
 echo "*** generate WireGuard Server configuration (wg0.config)"
 echo " 
@@ -76,6 +84,7 @@ echo "*** negate the need to reboot after the above change"
 sudo sysctl -p
 sudo echo 1 | tee /proc/sys/net/ipv4/ip_forward
 
+#-----------------------------------------------------------------------
 echo "### FIREWALL"
 
 # Track VPN connection
@@ -98,12 +107,12 @@ sudo systemctl enable netfilter-persistent &&
 sudo netfilter-persistent save
 
 
+#-----------------------------------------------------------------------
 echo "### CLIENTS"
 
 echo "*** client1"
 export clientName="client1"
 export clientAddress="10.200.200.11/32"
-export clientFileName=${serverIP}_${clientName}
 
 echo "[Interface] 
 Address = ${clientAddress}
@@ -111,11 +120,11 @@ PrivateKey = $(cat 'wg/keys/client1_private_key')
 DNS = 1.1.1.1 
 
 [Peer]
-PublicKey = $(cat 'wg/keys/server_public_key')
+PublicKey = ${serverPublicKey}
 Endpoint = ${serverIP}:51820
 AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 21" > wg/clients/${clientFileName}.conf &&
-qrencode -o wg/clients/${clientFileName}.png -t png < wg/clients/${clientFileName}.conf 
+PersistentKeepalive = 21" > wg/clients/${clientName}.conf &&
+qrencode -o wg/clients/${clientName}.png -t png < wg/clients/${clientName}.conf 
 
 
 # extract clients from server: 
