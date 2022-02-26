@@ -35,23 +35,23 @@ echo "*** generate public & private keys for server and clients"
 umask 077
 mkdir wg && mkdir wg/keys && mkdir wg/clients
 #
-wg genkey | tee wg/keys/server_private_key  | wg pubkey > wg/keys/server_public_key
-wg genkey | tee wg/keys/client1_private_key | wg pubkey > wg/keys/client1_public_key 
-wg genkey | tee wg/keys/client2_private_key | wg pubkey > wg/keys/client2_public_key 
-wg genkey | tee wg/keys/client3_private_key | wg pubkey > wg/keys/client3_public_key
+wg genkey | tee wg/keys/${serverIP}_server_private_key  | wg pubkey > wg/keys/${serverIP}_server_public_key
+#
+wg genkey | tee wg/keys/${serverIP}_client1_private_key | wg pubkey > wg/keys/${serverIP}_client1_public_key 
+wg genkey | tee wg/keys/${serverIP}_client2_private_key | wg pubkey > wg/keys/${serverIP}_client2_public_key 
+wg genkey | tee wg/keys/${serverIP}_client3_private_key | wg pubkey > wg/keys/${serverIP}_client3_public_key
+wg genkey | tee wg/keys/${serverIP}_client4_private_key | wg pubkey > wg/keys/${serverIP}_client4_public_key
+wg genkey | tee wg/keys/${serverIP}_client5_private_key | wg pubkey > wg/keys/${serverIP}_client5_public_key
 
-# getting server public key file name and set variable
-#echo 'wg/keys/' > serverpublickey.txt
-#echo ${serverIP} >> serverpublickey.txt
-#echo '_server_public_key' >> serverpublickey.txt
-
-export serverPublicKey=$(cat 'wg/keys/server_public_key')
-echo Server Public Key = ${serverPublicKey}
+# getting server keys and set variables
+export serverPublicKey=cat wg/keys/${serverIP}_server_public_key
+export serverPrivateKey=cat wg/keys/${serverIP}_server_private_key
+#echo Server Public Key = ${serverPublicKey}
 
 echo "*** generate WireGuard Server configuration (wg0.config)"
 echo " 
 [Interface]
-PrivateKey = $(cat wg/keys/server_private_key)
+PrivateKey = ${serverPrivateKey}
 Address = 10.200.200.1/24
 ListenPort = 51820
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o ens3 -j MASQUERADE; iptables -t nat -A POSTROUTING -s 10.200.200.0/24 -o eth0 -j MASQUERADE
@@ -60,16 +60,24 @@ SaveConfig = true
 
 #Clients
 [Peer] # client1
-PublicKey = $(cat wg/keys/client1_public_key)
+PublicKey = $(cat wg/keys/${serverIP}_client1_public_key)
 AllowedIPs = 10.200.200.11/32
 
 [Peer] # client2
-PublicKey = $(cat wg/keys/client2_public_key)
+PublicKey = $(cat wg/keys/${serverIP}_client2_public_key)
 AllowedIPs = 10.200.200.12/32
 
 [Peer] # client3
-PublicKey = $(cat wg/keys/client3_public_key)
+PublicKey = $(cat wg/keys/${serverIP}_client3_public_key)
 AllowedIPs = 10.200.200.13/32
+
+[Peer] # client4
+PublicKey = $(cat wg/keys/${serverIP}_client4_public_key)
+AllowedIPs = 10.200.200.14/32
+
+[Peer] # client5
+PublicKey = $(cat wg/keys/${serverIP}_client5_public_key)
+AllowedIPs = 10.200.200.15/32
 "| tee /etc/wireguard/wg0.conf
 
 
@@ -77,10 +85,8 @@ echo "*** bring the Wireguard interface up and makes sure it is auto start on re
 sudo wg-quick up wg0 &&  
 sudo systemctl enable wg-quick@wg0.service
 
-echo "*** enable IPv4 forwarding"
+echo "*** enable IPv4 forwarding and negate the need to reboot after the change"
 sudo sed -i 's/\#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
-
-echo "*** negate the need to reboot after the above change"
 sudo sysctl -p
 sudo echo 1 | tee /proc/sys/net/ipv4/ip_forward
 
@@ -108,29 +114,33 @@ sudo netfilter-persistent save
 
 
 #-----------------------------------------------------------------------
-echo "### CLIENTS"
+echo "### For each CLIENT"
 
 echo "*** client1"
 export clientName="client1"
 export clientAddress="10.200.200.11/32"
+export clientPrivateKey=cat wg/keys/${serverIP}_${clientName}_private_key
 
 echo "[Interface] 
 Address = ${clientAddress}
-PrivateKey = $(cat 'wg/keys/client1_private_key')
+PrivateKey = ${clientPrivateKey}
 DNS = 1.1.1.1 
 
 [Peer]
 PublicKey = ${serverPublicKey}
 Endpoint = ${serverIP}:51820
 AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 21" > wg/clients/${clientName}.conf &&
-qrencode -o wg/clients/${clientName}.png -t png < wg/clients/${clientName}.conf 
+PersistentKeepalive = 21" > wg/clients/${serverIP}_${clientName}.conf
+
+qrencode -o wg/clients/${serverIP}_${clientName}.png -t png < wg/clients/${serverIP}_${clientName}.conf 
+
+# cleanup
 
 
 # extract clients from server: 
 # scp your_server_login@54.166.184.7:wg/clients/* wg/
 #
-# install net-tools!
+# install net-tools to run wget!
 # sudo apt install net-tools -y && sudo wget -L https://github.com/marlon-net/wg-install/raw/master/ubuntu20.sh -O installwg.sh && bash installwg.sh
 
 
