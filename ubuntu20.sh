@@ -59,26 +59,20 @@ PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING 
 SaveConfig = true 
 "| sudo tee /etc/wireguard/wg0.conf
 
-#Clients
 echo creating [Peer] section
 export countFiles=0
 for FILE in wg/keys/*client*public_key
 do
     ((countFiles++))
-    echo creating client $countFiles
-    echo " 
-    [Peer] # client${countFiles}
-    PublicKey = $(cat ${FILE})
-    AllowedIPs = 10.200.200.1${countFiles}/32
-    "| sudo tee -a /etc/wireguard/wg0.conf
+    echo creating peer $countFiles
+    echo "
+[Peer] # client${countFiles}
+PublicKey = $(cat ${FILE})
+AllowedIPs = 10.200.200.1${countFiles}/32
+"| sudo tee -a /etc/wireguard/wg0.conf
 done
 
 echo $countFiles files found
-
-
-#[Peer] # client2
-#PublicKey = $(cat wg/keys/${serverIP}_client2_public_key)
-#AllowedIPs = 10.200.200.12/32
 
 
 echo "*** bring the Wireguard interface up and makes sure it is auto start on reboot"
@@ -116,12 +110,17 @@ sudo netfilter-persistent save
 #-----------------------------------------------------------------------
 echo "### For each CLIENT"
 
-echo "*** client1"
-export clientName="client1"
-export clientAddress="10.200.200.11/32"
-export clientPrivateKey=cat wg/keys/${serverIP}_${clientName}_private_key
+export countFiles=0
+for FILE in wg/keys/*client*public_key
+do
+    ((countFiles++))
+    echo creating client ${countFiles}
 
-echo "[Interface] 
+    export clientName=client${countFiles}
+    export clientAddress="10.200.200.1${countFiles}/32"
+    export clientPrivateKey=cat wg/keys/${serverIP}_${clientName}_private_key
+
+    echo "[Interface] 
 Address = ${clientAddress}
 PrivateKey = ${clientPrivateKey}
 DNS = 1.1.1.1 
@@ -132,7 +131,8 @@ Endpoint = ${serverIP}:51820
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 21" > wg/clients/${serverIP}_${clientName}.conf
 
-qrencode -o wg/clients/${serverIP}_${clientName}.png -t png < wg/clients/${serverIP}_${clientName}.conf 
+    qrencode -o wg/clients/${serverIP}_${clientName}.png -t png < wg/clients/${serverIP}_${clientName}.conf 
+done
 
 # cleanup
 
