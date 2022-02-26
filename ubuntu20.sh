@@ -62,7 +62,7 @@ SaveConfig = true
 #Clients
 echo creating [Peer] section
 export countFiles=0
-for FILE in wg/keys/*
+for FILE in wg/keys/*client*public_key
 do
     ((countFiles++))
     echo creating client $countFiles
