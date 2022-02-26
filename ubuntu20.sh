@@ -7,12 +7,18 @@
 # - create 3 Clients with IPs *.11, *.12, *.13
 # Focus on AWS Lightsail and deployed through Terraform 
 # ("sudo" not needed)
+# needs net-tools !
 #
 # marlon.net 2022
 # based on https://xalitech.com/wireguard-vpn-server-on-aws-lightsail/
 
 # usual thing: 
-apt update -y && apt upgrade -y
+apt update -y 
+apt upgrade -y
+
+# useful to get IP information
+echo "*** utils installation"
+apt install moreutils -y
 
 echo "*** WG installation"
 apt install wireguard -y
@@ -54,18 +60,18 @@ AllowedIPs = 10.200.200.13/32
 "| tee /etc/wireguard/wg0.conf
 
 
-# bring the Wireguard interface up
-# and makes sure it is auto start on reboot
+echo "*** bring the Wireguard interface up and makes sure it is auto start on reboot"
 wg-quick up wg0 &&  
 systemctl enable wg-quick@wg0.service
 
-# enable IPv4 forwarding
+echo "*** enable IPv4 forwarding"
 sed -i 's/\#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
-# negate the need to reboot after the above change
+
+echo "*** negate the need to reboot after the above change"
 sysctl -p
 echo 1 | tee /proc/sys/net/ipv4/ip_forward
 
-### Firewall
+echo "### FIREWALL"
 
 # Track VPN connection
 iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
@@ -81,23 +87,27 @@ iptables -A INPUT -s 10.200.200.0/24 -p udp -m udp --dport 53 -m conntrack --cts
 # Allow forwarding of packets that stay in the VPN tunnel
 iptables -A FORWARD -i wg0 -o wg0 -m conntrack --ctstate NEW -j ACCEPT
 
-# make firewall changes persistent
+echo "make firewall changes persistent"
 apt install iptables-persistent -y &&
 systemctl enable netfilter-persistent &&
 netfilter-persistent save
 
 
-### Client configurations
+echo "### CLIENTS"
 
 # Public IP of Lightsail instance
-export serverIP="54.166.184.7"
-
-echo "*** CLIENTS"
+#export serverIP="54.166.184.7"
+curl ifconfig.me > myipv4.txt
+export serverIP=$(cat 'myipv4.txt')
+echo Server IP = ${serverIP}
 
 echo "*** client1"
-export clientname="client1"
+export clientName="client1"
+export clientAddress="10.200.200.11/32"
+export clientFileName=${serverIP}_${clientName}
+
 echo "[Interface] 
-Address = 10.200.200.1/32
+Address = ${clientAddress}
 PrivateKey = $(cat 'wg/keys/client1_private_key')
 DNS = 1.1.1.1 
 
@@ -105,12 +115,15 @@ DNS = 1.1.1.1
 PublicKey = $(cat 'wg/keys/server_public_key')
 Endpoint = ${serverIP}:51820
 AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 21" > wg/clients/${serverIP}_${clientname}.conf &&
-qrencode -o wg/clients/${serverIP}_${clientname}.png -t png < wg/clients/${serverIP}_${clientname}.conf 
+PersistentKeepalive = 21" > wg/clients/${clientFileName}.conf &&
+qrencode -o wg/clients/${clientFileName}.png -t png < wg/clients/${clientFileName}.conf 
 
 
 # extract clients from server: 
 # scp your_server_login@54.166.184.7:wg/clients/* wg/
+#
+# install net-tools!
+# apt install net-tools -y && wget https://github.com/marlon-net/wg-install/blob/master/ubuntu20.sh -O installwg.sh && bash installwg.sh
 
 
 ### END
