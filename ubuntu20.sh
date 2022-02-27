@@ -17,11 +17,11 @@ sudo apt update -y
 sudo apt upgrade -y
 
 # useful to get IP information
-echo "*** utils installation"
-sudo apt install moreutils -y
+#echo "*** utils installation"
+#sudo apt install moreutils -y
 
 # Public IP of Lightsail instance
-curl ifconfig.me > myipv4.txt
+curl ifconfig.me/ip > myipv4.txt
 export serverIP=$(cat 'myipv4.txt')
 echo Server IP = ${serverIP}
 
@@ -100,6 +100,12 @@ sudo iptables -A INPUT -s 10.200.200.0/24 -p udp -m udp --dport 53 -m conntrack 
 # Allow forwarding of packets that stay in the VPN tunnel
 sudo iptables -A FORWARD -i wg0 -o wg0 -m conntrack --ctstate NEW -j ACCEPT
 
+# Port FW from Server to Client Router - port Helium 44158
+sudo iptables -t nat -I PREROUTING -i eth0 -p tcp -m tcp --dport 44158 -j DNAT --to-destination 10.200.200.5:44158
+
+# Flush
+sudo iptables -F
+
 echo "make firewall changes persistent"
 # prepare to no prompt at all!
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
@@ -109,6 +115,11 @@ sudo apt install iptables-persistent -y
 # survive after boot
 sudo systemctl enable netfilter-persistent &&
 sudo netfilter-persistent save
+
+echo ***** Confirm IPTABLES configuration :
+sudo iptables -L -n -t nat
+
+echo ***** END OF SERVER CONFIGURATION
 
 
 #-----------------------------------------------------------------------
