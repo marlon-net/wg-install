@@ -101,7 +101,7 @@ sudo iptables -A INPUT -s 10.200.200.0/24 -p udp -m udp --dport 53 -m conntrack 
 sudo iptables -A FORWARD -i wg0 -o wg0 -m conntrack --ctstate NEW -j ACCEPT
 
 # Port FW from Server to Client Router - port Helium 44158
-sudo iptables -t nat -I PREROUTING -i eth0 -p tcp -m tcp --dport 44158 -j DNAT --to-destination 10.200.200.5:44158
+#  BETTER Manually !!! sudo iptables -t nat -I PREROUTING -i eth0 -p tcp -m tcp --dport 44158 -j DNAT --to-destination 10.200.200.5:44158
 
 # Flush
 sudo iptables -F
@@ -157,7 +157,12 @@ done
 #
 # install net-tools to run wget!
 # sudo apt install net-tools -y && sudo wget -L https://github.com/marlon-net/wg-install/raw/master/ubuntu20.sh -O installwg.sh && bash installwg.sh
-
+# 
+# DONT FORGET THESE
+# sudo iptables -t nat -I PREROUTING -i eth0 -p tcp -m tcp --dport 44158 -j DNAT --to-destination xxx.xxx.xxx.xxx:44158
+# sudo iptables -F
+# sudo apt install iptables-persistent
+# sudo iptables -L -n -t nat
 
 ### END
 
