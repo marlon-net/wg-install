@@ -101,7 +101,12 @@ sudo iptables -A INPUT -s 10.200.200.0/24 -p udp -m udp --dport 53 -m conntrack 
 sudo iptables -A FORWARD -i wg0 -o wg0 -m conntrack --ctstate NEW -j ACCEPT
 
 echo "make firewall changes persistent"
-sudo apt install iptables-persistent -y &&
+# prepare to no prompt at all!
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+# installation
+sudo apt install iptables-persistent -y
+# survive after boot
 sudo systemctl enable netfilter-persistent &&
 sudo netfilter-persistent save
 
