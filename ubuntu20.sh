@@ -70,7 +70,7 @@ do
     echo "
 [Peer] # client${countFiles}
 PublicKey = $(cat ${FILE})
-AllowedIPs = ${_BASE_NET_ADDRESS}.1${countFiles}/24
+AllowedIPs = ${_BASE_NET_ADDRESS}.1${countFiles}/32
 "| sudo tee -a /etc/wireguard/wg0.conf
 done
 
@@ -136,7 +136,7 @@ do
 
     ((countFiles++))
     export clientName=client${countFiles}
-    export clientAddress="${_BASE_NET_ADDRESS}.1${countFiles}/24"
+    export clientAddress="${_BASE_NET_ADDRESS}.1${countFiles}/32"
     export clientPrivateKey=$(cat ${FILE})
 
     echo "[Interface] 
