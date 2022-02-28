@@ -24,7 +24,7 @@ echo Server IP = ${serverIP}
 #----- to do: use parameters
 _NUMBER_OF_CLIENTS = 5
 _WG_LISTEN_PORT = 51820
-_BASE_NET_ADDRESS = "10.200.200" # e.g. "10.200.200" for network 10.200.200.0 - always /24 (to do: improve this)
+_BASE_NET_ADDRESS = "10.200.200" # e.g. "10.200.200" for network 10.200.200.0 
 
 #-----------------------------------------------------------------------
 # SERVER CONFIGURATION
@@ -66,7 +66,7 @@ export countFiles=0
 for FILE in wg/keys/*client*public_key
 do
     ((countFiles++))
-    echo creating peer $countFiles
+    echo creating peer to $countFiles
     echo "
 [Peer] # client${countFiles}
 PublicKey = $(cat ${FILE})
@@ -92,8 +92,8 @@ echo "### FIREWALL"
 sudo iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 sudo iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
-# Enable VPN traffic on the listening port: 51820
-sudo iptables -A INPUT -p udp -m udp --dport 51820 -m conntrack --ctstate NEW -j ACCEPT
+# Enable VPN traffic on the listening port: see _WG_LISTEN_PORT
+sudo iptables -A INPUT -p udp -m udp --dport ${_WG_LISTEN_PORT} -m conntrack --ctstate NEW -j ACCEPT
 
 # TCP & UDP recursive DNS traffic
 sudo iptables -A INPUT -s ${_BASE_NET_ADDRESS}.0/24 -p tcp -m tcp --dport 53 -m conntrack --ctstate NEW -j ACCEPT
@@ -146,7 +146,7 @@ DNS = 1.1.1.1
 
 [Peer]
 PublicKey = ${serverPublicKey}
-Endpoint = ${serverIP}:51820
+Endpoint = ${serverIP}:${_WG_LISTEN_PORT}
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 21" > wg/clients/${serverIP}_${clientName}.conf
 
